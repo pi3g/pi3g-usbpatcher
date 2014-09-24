@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-const version = "0.0.3"
+const version = "1.0.0"
 
 const mountPath = "/mnt"
 const logPath = "/var/log/pi3g-usbpatcher"
