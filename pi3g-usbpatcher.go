@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-const version = "1.0.0"
+const version = "1.0.1"
 
 const mountPath = "/mnt"
 const logPath = "/var/log/pi3g-usbpatcher"
@@ -23,7 +23,7 @@ const haltBin = "/sbin/halt"
 
 // mount mounts the device at devname to mountPath
 func mount(devname string) error {
-	return exec.Command(mountBin, devname, mountPath).Run()
+	return exec.Command(mountBin, "-r", devname, mountPath).Run()
 }
 
 // umount unmounts the device at devname
