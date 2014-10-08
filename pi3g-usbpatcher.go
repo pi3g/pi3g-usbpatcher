@@ -2,18 +2,17 @@ package main
 
 import (
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"regexp"
 	"strings"
 )
 
-const version = "1.0.1"
+var version = "1.0.2"
 
 const mountPath = "/mnt"
-const logPath = "/var/log/pi3g-usbpatcher"
 const updaterPath = "/usr/bin/pi3g-usbpatcher"
+
 var filenameRegexp = regexp.MustCompile(`^pi3g-patch-.+?.(tgz|tar.gz)$`)
 
 const mountBin = "/bin/mount"
@@ -60,62 +59,58 @@ func halt() error {
 }
 
 func main() {
-	// start logging
-	logfile, err := os.OpenFile(logPath, os.O_APPEND|os.O_RDWR|os.O_CREATE, 0666)
-	if err != nil {
-		log.Println(err)
-		log.Println("Falling back to stdout logging")
-	} else {
-		log.SetOutput(logfile)
-	}
-	defer logfile.Close()
-	log.Println("Device plugged in, running updater version ", version)
+	debug("Device plugged in, running updater version ", version)
 
 	devname := os.Getenv("DEVNAME")
 	if devname == "" {
-		log.Fatalln("DEVNAME not set")
+		debug("DEVNAME not set")
+		os.Exit(1)
 	}
-	log.Println("Device found: ", devname)
+	debug("Device found: ", devname)
 
-	err = mount(devname)
+	err := mount(devname)
 	if err != nil {
-		log.Fatalln("mount: ", err)
+		debug("mount: ", err)
+		os.Exit(1)
 	}
 
 	patchFile := findPatchFile()
 	if patchFile == "" {
 		err = umount(devname)
 		if err != nil {
-			log.Println("umount: ", err)
+			debug("umount: ", err)
 		}
-		log.Fatalln("No patch on drive")
+		debug("No patch on drive")
+		os.Exit(1)
 	}
 	patchFile = mountPath + "/" + patchFile
-	log.Println("Patch file found: ", patchFile)
+	debug("Patch file found: ", patchFile)
 
 	out, err := archiveList(patchFile)
 	if err != nil {
 		err = umount(devname)
 		if err != nil {
-			log.Println("umount: ", err)
+			debug("umount: ", err)
 		}
-		log.Fatalln("tar list: ", err)
+		debug("tar list: ", err)
+		os.Exit(1)
 	}
-	log.Printf("The following files will be updated:\n%s", out)
+	debugf("The following files will be updated:\n%s", out)
 
 	// unlink this binary if it is going to be replaced
 	re := regexp.MustCompile(`^[^/]*` + updaterPath + `$`)
 	for _, line := range strings.Fields(out) {
 		if re.MatchString(line) {
-			log.Println("Warning: Contains update for updater!")
+			debug("Warning: Contains update for updater!")
 			err := os.Remove(updaterPath)
 			if err != nil {
 				err = umount(devname)
 				if err != nil {
-					log.Println("umount: ", err)
+					debug("umount: ", err)
 				}
-				log.Println("This is really bad!")
-				log.Fatalln("remove: ", err)
+				debug("This is really bad!")
+				debug("remove: ", err)
+				os.Exit(1)
 			}
 			break
 		}
@@ -125,20 +120,22 @@ func main() {
 	if err != nil {
 		err = umount(devname)
 		if err != nil {
-			log.Println("umount: ", err)
+			debug("umount: ", err)
 		}
-		log.Fatalln("tar extract: ", err)
+		debug("tar extract: ", err)
+		os.Exit(1)
 	}
 
 	// we couldn't defer this because main usually doesn't return
 	err = umount(devname)
 	if err != nil {
-		log.Println("umount: ", err)
+		debug("umount: ", err)
 	}
 
-	log.Println("Shutting down")
+	debug("Shutting down")
 	err = halt()
 	if err != nil {
-		log.Fatalln("halt: ", err)
+		debug("halt: ", err)
+		os.Exit(1)
 	}
 }
