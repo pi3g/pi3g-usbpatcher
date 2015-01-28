@@ -20,11 +20,13 @@ To build for the Raspberry Pi run:
 
 For logging of debug messages add `-tags debug` like this:
 
-    GOARCH=arm GOARM=5 go build -tags debug github.com/luksen/pi3g-netconf
+    GOARCH=arm GOARM=5 go build -tags debug github.com/pi3g/pi3g-netconf
 
 # TODO
 
 Planned features:
 
+- Configuration file
+- Package signing
 - Deleting files
 - Installing packages
